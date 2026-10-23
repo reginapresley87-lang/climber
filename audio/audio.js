@@ -196,6 +196,8 @@
   A.isUnlocked = function () { return ok(); };
   var hooked = false; function hookOnce() { if (!hooked) { hooked = true; hookUnlock(); } }
 
+  A.unlock = function () { unlock(); };
+  A.resume = function () { if (ctx && ctx.resume) ctx.resume(); };
   var api = {}; Object.keys(A).forEach(function (k) { api[k] = safe(A[k]); });
   hookOnce();
   window.CLIMB_AUDIO = api;

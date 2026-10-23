@@ -60,7 +60,7 @@ function buildChunk(i){const g=new THREE.Group();const y0=i*CH;const list=[],bl=
  const wall=new THREE.Mesh(geo,rockMat);g.add(wall);wall.userData.wall=1;
  const R=rng(1000+i*7919);
  for(let y=y0+(i===0?2.1:0.2);y<y0+CH;y+=0.36+R()*0.12){const n=3+(R()*3|0);
-  for(let j=0;j<n;j++){const x=(R()*2-1)*2.6;const r=R();const type=r<.3?'jug':r<.6?'crimp':r<.8?'sloper':'crack';
+  for(let j=0;j<n;j++){const x=(R()*2-1)*(j<2?1:2.6);const r=R();const type=r<.3?'jug':r<.6?'crimp':r<.8?'sloper':'crack';
    addHold(list,g,x,y,type,type==='crack'?{w:[0.5,0.75,1,2,3,4][R()*6|0],taper:R()<.5}:{});}
   if(R()<.25){const x=(R()*2-1)*9;addHold(list,g,x,y,R()<.5?'jug':'crimp');}}
  if(i===0){[[-.25,.35],[.25,.35],[-.5,1.0],[.5,1.0],[-.3,1.75],[.3,1.75],[0,1.4],[-.2,2.1]].forEach(([x,y],k)=>addHold(list,g,x,y,k<2?'jug':k%2?'jug':'crimp'));}
@@ -102,29 +102,36 @@ function ik(a,t,l1,l2,pole){const d0=t.clone().sub(a);let d=d0.length();const di
 const S={stamina:1,grip:1,sel:'RH',limbs:{},mode:'climb',pros:[],gear:null,cams:null,fallCbs:[],maxY:0,restY:0,started:false,summit:false,hip:V(),chest:V(),fall:null,startHip:0,msgT:0};
 function resetGear(){const I=Infinity;S.gear={quickdraw:I,cam:I,nut:I,carabiner:I,chalk:I,rope:I,iceAxe:I,crampons:I,oxygen:I,downSuit:I,gloves:I};S.cams=[0.5,0.75,1,2,3,4];}
 function poseFrom(lp){const hx=(lp.LH.x+lp.RH.x)/2,hy=(lp.LH.y+lp.RH.y)/2,fx=(lp.LF.x+lp.RF.x)/2,fy=(lp.LF.y+lp.RF.y)/2;
- const chest=V(hx*.7+fx*.3,hy-(P.arm1+P.arm2)*.5,0),hip=V(fx*.6+hx*.4,fy+(P.leg1+P.leg2)*.7,0);
+ const chest=V(hx*.7+fx*.3,hy-(P.arm1+P.arm2)*.42,0),hip=V(fx*.6+hx*.4,fy+(P.leg1+P.leg2)*.7,0);
  const m=chest.clone().add(hip).multiplyScalar(.5);let dir=chest.clone().sub(hip);if(dir.y<.2)dir.y=.2;dir.normalize();
  chest.copy(m).addScaledVector(dir,P.torso/2);hip.copy(m).addScaledVector(dir,-P.torso/2);
  chest.z=wallZ(chest.x,chest.y)+.3*P.s;hip.z=wallZ(hip.x,hip.y)+.34*P.s;return{chest,hip};}
 function roots(ps){const r={};const sd=V(1,0,0);r.LH=ps.chest.clone().addScaledVector(sd,-P.sw/2);r.RH=ps.chest.clone().addScaledVector(sd,P.sw/2);
  r.LF=ps.hip.clone().addScaledVector(sd,-P.hw/2);r.RF=ps.hip.clone().addScaledVector(sd,P.hw/2);return r;}
-function valid(lp){const ps=poseFrom(lp),r=roots(ps);for(const L of LIMBS){const len=L[1]==='H'?P.arm1+P.arm2:P.leg1+P.leg2;if(lp[L].distanceTo(r[L])>len*1.25)return false;}
+function valid(lp){const ps=poseFrom(lp),r=roots(ps);for(const L of LIMBS){const len=L[1]==='H'?P.arm1+P.arm2:P.leg1+P.leg2;if(lp[L].distanceTo(r[L])>len*1.4)return false;}
  if(Math.min(lp.LH.y,lp.RH.y)<Math.max(lp.LF.y,lp.RF.y)+.15)return false;if(Math.abs(lp.LH.x-lp.RH.x)>1.5||Math.abs(lp.LF.x-lp.RF.x)>1.2)return false;return true;}
 function curLP(){const o={};for(const L of LIMBS)o[L]=(S.limbs[L].to||S.limbs[L].pos).clone();return o;}
 function canMove(L,h){if(h.type==='crack'&&L[1]==='F'&&false)return false;for(const K of LIMBS)if(K!==L&&S.limbs[K].hold===h&&h.type!=='ledge'&&h.type!=='jug')return false;const lp=curLP();lp[L]=h.pos.clone();return valid(lp);}
 function msg(t){(window.CLIMB_UI&&window.CLIMB_UI.toast)?window.CLIMB_UI.toast(t):(hudMsg.textContent=t,hudMsg.style.opacity=1,S.msgT=1.4);}
-function moveLimb(L,h){const l=S.limbs[L];if(S.mode!=='climb')return false;if(!canMove(L,h)){msg('Out of reach');return false;}
+function moveLimb(L,h,auto){const l=S.limbs[L];if(S.mode!=='climb')return false;if(!canMove(L,h)){msg('Out of reach');return false;}
  l.from=l.pos.clone();l.to=h.pos.clone();l.t=0;l.hold=null;l.next=h;return true;}
-function attachNear(p){const pick=(tx,ty,excl)=>{let b=null,bd=1e9;for(const h of holds){if(excl.includes(h))continue;const d=(h.pos.x-tx)**2+(h.pos.y-ty)**2;if(d<bd){bd=d;b=h;}}return b;};
+function attachNear(p){const pick=(tx,ty,excl)=>{let b=null,bd=1e9;for(const h of holds){if(excl.includes(h))continue;const d=(h.pos.x-tx)**2+(h.pos.y-ty)**2+(1-Math.min(1,h.q))*.25;if(d<bd){bd=d;b=h;}}return b;};
  const used=[];const set=(L,tx,ty)=>{const h=pick(tx,ty,used);used.push(h);S.limbs[L]={hold:h,pos:h.pos.clone()};};
  set('LF',p.x-.2,p.y-.75);set('RF',p.x+.2,p.y-.75);set('LH',p.x-.3,p.y+.75);set('RH',p.x+.3,p.y+.75);
  for(const L of ['LH','RH'])if(S.limbs[L].pos.y<Math.max(S.limbs.LF.pos.y,S.limbs.RF.pos.y)+.4){const h=pick(p.x+(L==='LH'?-.3:.3),p.y+1.1,used);used.push(h);S.limbs[L]={hold:h,pos:h.pos.clone()};}}
 // ---------- rope & gear ----------
 const ROPE_MAX=80;const ropeGeo=new THREE.BufferGeometry();ropeGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(ROPE_MAX*3),3));
-const rope=new THREE.Line(ropeGeo,new THREE.LineBasicMaterial({color:0xe2312b}));rope.frustumCulled=false;scene.add(rope);
-const belayAnchor=V(-1.6,0.9,1.7);
-{const b=new THREE.Mesh(new THREE.CylinderGeometry(.12,.15,1.6,7),new THREE.MeshStandardMaterial({color:0x335577}));b.position.set(-1.8,.8,1.9);scene.add(b);
- const bh=new THREE.Mesh(new THREE.SphereGeometry(.11,8,6),new THREE.MeshStandardMaterial({color:0xe0b08e}));bh.position.set(-1.8,1.7,1.9);scene.add(bh);}
+const rope=new THREE.Line(ropeGeo,new THREE.LineBasicMaterial({color:0x8b3fd9}));rope.frustumCulled=false;scene.add(rope);
+const belayAnchor=V(-1.8,0.95,1.75);
+{const g=new THREE.Group(),M=c=>new THREE.MeshStandardMaterial({color:c,roughness:.8});const jk=M(0xd9542b),pn=M(0x2b3440),sk=M(0xe0b08e),bt=M(0x222222);
+ const add=(geo,m,x,y,z,rx=0,rz=0)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.rotation.set(rx,0,rz);g.add(o);return o;};
+ add(new THREE.CylinderGeometry(.16,.13,.6,8),jk,0,1.2,0);add(new THREE.SphereGeometry(.11,10,8),sk,0,1.65,0);add(new THREE.SphereGeometry(.12,10,6,0,6.3,0,1.6),M(0x2a6fdb),0,1.68,0);
+ add(new THREE.CylinderGeometry(.06,.05,.85,6),pn,-.09,.45,0,0,.05);add(new THREE.CylinderGeometry(.06,.05,.85,6),pn,.09,.45,0,0,-.05);
+ add(new THREE.BoxGeometry(.11,.07,.24),bt,-.1,.04,-.04);add(new THREE.BoxGeometry(.11,.07,.24),bt,.1,.04,-.04);
+ add(new THREE.CylinderGeometry(.045,.04,.55,6),jk,-.2,1.2,-.12,-.9,.2);add(new THREE.CylinderGeometry(.045,.04,.55,6),jk,.2,1.2,-.12,-.9,-.2);
+ add(new THREE.TorusGeometry(.15,.02,5,12),M(0xf2b01e),0,.92,0,Math.PI/2);g.position.set(-1.8,0,1.9);g.rotation.y=Math.PI;scene.add(g);
+ const rk=new THREE.MeshStandardMaterial({color:0x6d6760,roughness:1,flatShading:true}),rr=rng(5);for(let i=0;i<60;i++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.15+rr()*.6,0),rk);
+  r.position.set((rr()*2-1)*18,0,1+rr()*14);r.scale.y=.5+rr()*.4;r.rotation.set(rr()*3,rr()*3,0);scene.add(r);}}
 function updateRope(harn){const pts=[belayAnchor,...S.pros.map(p=>p.clip),harn];const a=ropeGeo.attributes.position.array;let n=0;
  for(let i=0;i<pts.length-1&&n<ROPE_MAX-2;i++){const p=pts[i],q=pts[i+1];const steps=Math.min(8,1+Math.ceil(p.distanceTo(q)/1.5));
   for(let k=0;k<steps&&n<ROPE_MAX-1;k++){const t=k/steps;const s=Math.sin(t*Math.PI)*Math.min(.25,p.distanceTo(q)*.03);a[n*3]=p.x+(q.x-p.x)*t;a[n*3+1]=p.y+(q.y-p.y)*t-s;a[n*3+2]=p.z+(q.z-p.z)*t+.03;n++;}}
@@ -171,12 +178,12 @@ function stepFall(dt){const f=S.fall;f.t+=dt;f.v.y-=9.8*dt;f.v.multiplyScalar(1-
  if(f.p.y<floor){f.p.y=floor;if(!f.landed){f.landed=1;A()?.land?.();f.endT=f.t+.8;}f.v.set(0,0,0);}
  if(f.p.y<0.95){f.p.y=.95;if(!f.landed){f.landed=1;A()?.land?.();f.endT=f.t+.8;}f.v.set(0,0,0);}
  const settled=f.caught&&f.t>2.2&&f.v.length()<.6;
- if(settled||(f.endT&&f.t>f.endT)||f.t>6)endFall();
+ if(settled||(f.endT&&f.t>f.endT)||f.t>6){endFall();const lp={};for(const L of LIMBS)lp[L]=S.limbs[L].pos;return poseFrom(lp);}
  const ps={hip:f.p.clone(),chest:f.p.clone().add(V(0,P.torso,0))};const w=Math.sin(f.t*9)*.15;
  const lp={LH:ps.chest.clone().add(V(-.35,.35+w,.15)),RH:ps.chest.clone().add(V(.35,.35-w,.15)),LF:ps.hip.clone().add(V(-.2,-.75,.2-w)),RF:ps.hip.clone().add(V(.2,-.75,.2+w))};
  for(const L of LIMBS)S.limbs[L]={pos:lp[L],hold:null};return ps;}
 function endFall(){const f=S.fall;const dist=Math.max(0,f.y0-f.p.y);S.mode='climb';S.fall=null;attachNear(f.p.clone().add(V(0,.3,0)));
- S.grace=1.5;S.stamina=Math.max(S.stamina,.45);S.grip=Math.max(S.grip,.5);const info={caught:f.caught,distance:+dist.toFixed(2),height:getHeight(),protection:f.anchor?f.anchor.type:null};
+ S.grace=3;S.follow=null;S.stamina=Math.max(S.stamina,.85);S.grip=Math.max(S.grip,.8);const info={caught:f.caught,distance:+dist.toFixed(2),height:getHeight(),protection:f.anchor?f.anchor.type:null,reason:f.reason};
  S.fallCbs.forEach(cb=>{try{cb(info)}catch(e){}});}
 // ---------- input ----------
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
@@ -189,8 +196,8 @@ renderer.domElement.addEventListener('pointerup',e=>{if(!down)return;if(Math.hyp
 function tapHold(h){if(S.mode!=='climb')return;if(canMove(S.sel,h)){moveLimb(S.sel,h);return;}
  // auto-pick another limb if selected can't reach
  for(const L of LIMBS)if(L!==S.sel&&canMove(L,h)){selectLimb(L);moveLimb(L,h);return;}msg('Out of reach');}
-function bestMove(L){let best=null,bs=-1e9;for(const h of holds){if(Math.abs(h.pos.y-S.limbs[L].pos.y)>2)continue;if(!canMove(L,h))continue;const s=h.pos.y-S.limbs[L].pos.y+h.q*.1-Math.abs(h.pos.x)*.2;if(s>bs){bs=s;best=h;}}return best;}
-function autoMove(){if(S.mode!=='climb')return false;const order=[...LIMBS].sort((a,b)=>S.limbs[a].pos.y-S.limbs[b].pos.y);
+function bestMove(L){let best=null,bs=-1e9;for(const h of holds){if(Math.abs(h.pos.y-S.limbs[L].pos.y)>2)continue;if(!canMove(L,h))continue;const s=h.pos.y-S.limbs[L].pos.y+h.q*.15-Math.abs(h.pos.x)*.2;if(s>bs){bs=s;best=h;}}return best;}
+function autoMove(){if(S.mode!=='climb')return false;const order=[...['LH','RH'].sort((a,b)=>S.limbs[a].pos.y-S.limbs[b].pos.y),'LF','RF'];
  for(const L of order){const h=bestMove(L);if(h&&h.pos.y>S.limbs[L].pos.y+.05){selectLimb(L);return moveLimb(L,h);}}return false;}
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();const m={'1':'LH','2':'RH','3':'LF','4':'RF',q:'LH',w:'RH',a:'LF',s:'RF'};
  if(m[k])selectLimb(m[k]);else if(k===' '){autoMove();e.preventDefault();}else if(k==='c')placeGear('chalk');else if(k==='g'){placeGear('quickdraw')||placeGear('cam')||placeGear('nut');}else if(k==='e')placeGear('quickdraw');else if(k==='r')placeGear('cam');else if(k==='t')placeGear('nut');});
@@ -209,14 +216,15 @@ const selMark=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),new THREE.MeshBas
 let markT=0;function updateMarks(){let n=0;if(S.mode==='climb')for(const h of holds){if(n>=marks.length)break;if(Math.abs(h.pos.y-S.limbs[S.sel].pos.y)>1.5||h===S.limbs[S.sel].hold)continue;if(h.type==='ledge'&&h.pos.x*10%6)continue;
  if(canMove(S.sel,h)){const m=marks[n++];m.visible=true;m.position.copy(h.pos).add(V(0,0,.06));}}for(;n<marks.length;n++)marks[n].visible=false;}
 // ---------- main loop ----------
-const SCALE=4;const BASE=5300,TOP=8849;function getHeight(){return Math.round(BASE+Math.max(0,S.hip.y-S.startHip)*SCALE);}
+const SCALE=1;const BASE=5300,TOP=8849;function getHeight(){return Math.round((BASE+Math.max(0,S.hip.y-S.startHip)*SCALE)*10)/10;}
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));
 let last=performance.now(),audT=0,camY=1.5;
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000);last=now;
  let ps;if(S.mode==='fall')ps=stepFall(dt);else{
   for(const L of LIMBS){const l=S.limbs[L];if(l.to){l.t+=dt/.35;const t=Math.min(1,l.t);l.pos.lerpVectors(l.from,l.to,t);l.pos.z+=Math.sin(t*Math.PI)*.15;
-   if(t>=1){l.pos.copy(l.to);l.hold=l.next;l.to=l.next=null;L[1]==='H'?A()?.grip?.(l.hold.q):A()?.footstep?.();{const sn=snowAt(l.hold.pos.x,l.hold.pos.y);const sf=sn>0?(vn(l.hold.pos.x*.7+50,l.hold.pos.y*.7)>.6?'ice':'snow'):'rock';if(sf!==S.surf){S.surf=sf;A()?.surface?.(sf);}if(sf==='ice')(L[1]==='H'?A()?.iceAxe?.():A()?.crampon?.());}if(l.hold.ledge!==undefined){S.restY=Math.max(S.restY,l.hold.ledge);}}}}
+   if(t>=1){l.pos.copy(l.to);l.hold=l.next;l.to=l.next=null;L[1]==='H'?A()?.grip?.(l.hold.q):A()?.footstep?.();{const sn=snowAt(l.hold.pos.x,l.hold.pos.y);const sf=sn>0?(vn(l.hold.pos.x*.7+50,l.hold.pos.y*.7)>.6?'ice':'snow'):'rock';if(sf!==S.surf){S.surf=sf;A()?.surface?.(sf);}if(sf==='ice')(L[1]==='H'?A()?.iceAxe?.():A()?.crampon?.());}if(L[1]==='H')S.follow=['LF','RF'];if(l.hold.ledge!==undefined){S.restY=Math.max(S.restY,l.hold.ledge);}}}}
+  if(S.follow&&S.follow.length&&!LIMBS.some(K=>S.limbs[K].to)){const ft=[...S.follow].sort((a,b)=>S.limbs[a].pos.y-S.limbs[b].pos.y)[0];S.follow=S.follow.filter(x=>x!==ft);const h=bestMove(ft);if(h&&h.pos.y>S.limbs[ft].pos.y+.08)moveLimb(ft,h,true);}
   ps=poseFrom(curLP());const lp={};for(const L of LIMBS)lp[L]=S.limbs[L].pos;ps=poseFrom(lp);
   // stamina model
   let hq=0,fq=0,hc=0,fc=0;for(const L of LIMBS){const h=S.limbs[L].hold;if(!h)continue;if(L[1]==='H'){hq+=h.q;hc++;}else{fq+=h.q;fc++;}}
@@ -234,9 +242,9 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
  parts.pelvis.quaternion.setFromUnitVectors(up,sp);parts.harness.position.copy(ps.hip).addScaledVector(sp,.05);parts.harness.quaternion.setFromUnitVectors(V(0,0,1),sp);
  const hd=ps.chest.clone().addScaledVector(sp,.2*P.s);hd.z+=.03;parts.head.position.copy(hd);parts.helmet.position.copy(hd).addScaledVector(sp,.015);parts.helmet.quaternion.setFromUnitVectors(up,sp.clone().add(V(0,0,.2)).normalize());
  parts.hair.position.copy(hd).add(V(0,-.02,.03));if(parts.pony)parts.pony.position.copy(hd).add(V(0,-.08,.11));
- for(const L of LIMBS){const arm=L[1]==='H',side=L[0]==='L'?-1:1;const pole=arm?V(side,-1,.6):V(side*.8,.2,1);
+ for(const L of LIMBS){const arm=L[1]==='H',side=L[0]==='L'?-1:1;const pole=arm?V(side,-1,.6):V(side*.2,.35,-1);
   const s=ik(r[L],S.limbs[L].pos,arm?P.arm1:P.leg1,arm?P.arm2:P.leg2,pole);const pt=parts[L];seg(pt.a,r[L],s.j);seg(pt.b,s.j,s.e);pt.e.position.copy(s.e);
-  if(!arm){pt.e.position.z+=.04;pt.e.rotation.set(0,0,0);pt.loop.position.copy(r[L].clone().lerp(s.j,.12));pt.loop.quaternion.setFromUnitVectors(V(0,0,1),s.j.clone().sub(r[L]).normalize());}}
+  if(!arm){pt.e.position.copy(S.limbs[L].pos).add(V(0,.03,.08*P.s));pt.e.rotation.set(0,0,0);pt.loop.position.copy(r[L].clone().lerp(s.j,.12));pt.loop.quaternion.setFromUnitVectors(V(0,0,1),s.j.clone().sub(r[L]).normalize());}}
  updateRope(harnessPos());
  const sl=S.limbs[S.sel];selMark.visible=S.mode==='climb';selMark.position.copy(sl.pos).add(V(0,0,.05));
  markT-=dt;if(markT<=0){markT=.2;updateMarks();}
@@ -246,9 +254,9 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
  sky.position.copy(camera.position);{const a=Math.min(1,(getHeight()-BASE)/(TOP-BASE));sky.material.uniforms.alt.value=a;scene.fog.color.setRGB(.66-.3*a,.76-.3*a,.87-.25*a);}mountains.position.y=camY*.92;ground.visible=camY<120;sun.position.set(camera.position.x-12,camY+9,4);sun.target.position.set(0,camY,0);
  updateChunks(Math.min(camY,S.mode==='fall'?ps.hip.y:camY));
  // hud
- hud.querySelector('#hb-s').style.width=S.stamina*100+'%';hud.querySelector('#hb-g').style.width=S.grip*100+'%';hud.querySelector('#hb-h').textContent=getHeight().toLocaleString('en-US')+' m';
+ hud.querySelector('#hb-s').style.width=S.stamina*100+'%';hud.querySelector('#hb-g').style.width=S.grip*100+'%';hud.querySelector('#hb-h').textContent=Math.round(getHeight()).toLocaleString('en-US')+' m';
  if(S.msgT>0){S.msgT-=dt;if(S.msgT<=0)hudMsg.style.opacity=0;}
- audT-=dt;if(audT<=0){audT=.2;const au=A();if(au){const alt=getHeight();au.wind?.(alt);au.breathing?.(S.effort||0);if(S.stamina<.3)au.heartbeat?.(1-S.stamina/.3);au.weather?.('clear');au.setMusicIntensity?.(Math.min(1,(S.effort||0)*.6+(S.mode==='fall'?1:0)));
+ audT-=dt;if(audT<=0){audT=.2;const au=A();if(au){const alt=getHeight();au.wind?.(alt);au.breathing?.(S.effort||0);if(S.stamina<.3)au.heartbeat?.(1-S.stamina);au.weather?.('clear');au.setMusicIntensity?.(Math.min(1,(S.effort||0)*.6+(S.mode==='fall'?1:0)));
   if(!S.summit&&alt>=8849){S.summit=true;au.summit?.();msg('Summit! 8,849 m');}}}
  renderer.render(scene,camera);}
 // ---------- init / API ----------
@@ -256,7 +264,7 @@ function start(opts={}){setProps(opts.climber==='boy'?'boy':'girl');buildBody();
  resetGear();S.stamina=1;S.grip=1;S.mode='climb';S.fall=null;S.restY=0;S.summit=false;S.started=true;updateChunks(0);attachNear(V(0,1.05,0));
  const lp={};for(const L of LIMBS)lp[L]=S.limbs[L].pos;S.startHip=poseFrom(lp).hip.y;A()?.surface?.('rock');selectLimb('RH');return true;}
 setProps('girl');updateChunks(0);start({climber:'girl'});S.started=false;resize();requestAnimationFrame(frame);
-setTimeout(()=>{if(document.getElementById('cl-ui'))document.body.classList.add('has-ui');},300);
+{let n=0;const iv=setInterval(()=>{if(document.getElementById('cl-ui')){document.body.classList.add('has-ui');clearInterval(iv);}if(++n>40)clearInterval(iv);},250);}
 window.CLIMB={getStamina:()=>S.stamina,getGrip:()=>S.grip,getGear:()=>({...S.gear}),placeGear,selectLimb,onFall:cb=>{if(typeof cb==='function')S.fallCbs.push(cb);},
- start,getHeight,getCamSizes:()=>[...S.cams],autoMove,getSelectedLimb:()=>S.sel,isFalling:()=>S.mode==='fall',testFall:()=>startFall('Test fall')};
+ start,getHeight,getCamSizes:()=>[...S.cams],autoMove,getSelectedLimb:()=>S.sel,isFalling:()=>S.mode==='fall',testFall:()=>startFall('Test fall'),_setClimbed:m=>{S.startHip=S.hip.y-m/SCALE;}};
 window.dispatchEvent(new Event('climb-ready'));
