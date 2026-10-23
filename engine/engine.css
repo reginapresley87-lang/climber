@@ -1,0 +1,12 @@
+html,body{margin:0;height:100%;overflow:hidden;background:#87a9cf;touch-action:none;-webkit-user-select:none;user-select:none;font-family:-apple-system,system-ui,sans-serif}
+#game,#game canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#credit{position:fixed;right:8px;bottom:calc(6px + env(safe-area-inset-bottom));font-size:11px;color:#fff;opacity:.8;text-shadow:0 1px 2px #000;pointer-events:none;z-index:50}
+.climb-hud{position:fixed;z-index:20;color:#fff;text-shadow:0 1px 2px #000;font-size:13px}
+body.has-ui .climb-hud{display:none}
+#hud-bars{top:calc(8px + env(safe-area-inset-top));left:8px;width:150px}
+.bar{height:8px;background:#0006;border-radius:4px;margin:2px 0 6px;overflow:hidden}.bar i{display:block;height:100%;width:100%}
+#hud-limbs{left:8px;bottom:calc(24px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,52px);gap:6px}
+#hud-gear{right:8px;bottom:calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px}
+.climb-hud button{font:600 12px system-ui;color:#fff;background:#0008;border:2px solid #fff6;border-radius:10px;padding:8px 6px;min-width:52px}
+.climb-hud button.on{border-color:#ffd23a;background:#a7720088}
+#hud-msg{top:40%;left:0;right:0;text-align:center;font-size:20px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .3s}

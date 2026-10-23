@@ -1,0 +1,14 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Climber Audio Demo</title>
+<style>body{font-family:sans-serif;background:#223;color:#eee;padding:12px}button{margin:4px;padding:10px 14px;font-size:15px}label{display:block;margin:8px 0}input{width:220px;vertical-align:middle}</style></head><body>
+<h2>Climber Audio Demo</h2><p>Tap any button to start audio.</p><div id="b"></div><div id="s"></div>
+<p><button id="mute">Mute toggle</button> Surface: <button data-s="rock">rock</button><button data-s="snow">snow</button><button data-s="ice">ice</button> Weather: <button data-w="clear">clear</button><button data-w="rain">rain</button><button data-w="storm">storm</button></p>
+<p><small>Made by Nova Labs ⭐</small></p>
+<script src="audio.js"></script><script>
+var A=window.CLIMB_AUDIO;A.init();
+var btns={grip:[0.8],slip:[],footstep:[],chalk:[],ropeFeed:[],clip:[],cam:[],camPop:[],nut:[],iceAxe:[],crampon:[],belayCatch:[0.8],fall:[],'fallWhoosh start':[true],'fallWhoosh stop':[false],pebbles:[],land:[],summit:[]};
+Object.keys(btns).forEach(function(k){var b=document.createElement('button');b.textContent=k;b.onclick=function(){A[k.split(' ')[0]].apply(null,btns[k])};document.getElementById('b').appendChild(b)});
+[['setMasterVolume',0,1,0.8],['breathing',0,1,0],['heartbeat',0,1,0],['wind',5300,8849,5300],['setMusicIntensity',0,1,0]].forEach(function(c){var l=document.createElement('label');l.textContent=c[0]+' ';var i=document.createElement('input');i.type='range';i.min=c[1];i.max=c[2];i.step=(c[2]-c[1])/100;i.value=c[3];i.oninput=function(){A[c[0]](+i.value)};l.appendChild(i);document.getElementById('s').appendChild(l)});
+var m=false;document.getElementById('mute').onclick=function(){m=!m;A.mute(m)};
+document.querySelectorAll('[data-w]').forEach(function(b){b.onclick=function(){A.weather(b.dataset.w)}});
+document.querySelectorAll('[data-s]').forEach(function(b){b.onclick=function(){A.surface(b.dataset.s)}});
+</script></body></html>
