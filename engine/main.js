@@ -122,14 +122,14 @@ function attachNear(p){const pick=(tx,ty,excl)=>{let b=null,bd=1e9;for(const h o
 // ---------- rope & gear ----------
 const ROPE_MAX=80;const ropeGeo=new THREE.BufferGeometry();ropeGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array(ROPE_MAX*3),3));
 const rope=new THREE.Line(ropeGeo,new THREE.LineBasicMaterial({color:0x8b3fd9}));rope.frustumCulled=false;scene.add(rope);
-const belayAnchor=V(1.9,0.95,1.75);
+const belayAnchor=V(.9,0.95,1.25);
 {const g=new THREE.Group(),M=c=>new THREE.MeshStandardMaterial({color:c,roughness:.8});const jk=M(0xd9542b),pn=M(0x2b3440),sk=M(0xe0b08e),bt=M(0x222222);
  const add=(geo,m,x,y,z,rx=0,rz=0)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.rotation.set(rx,0,rz);g.add(o);return o;};
  add(new THREE.CylinderGeometry(.16,.13,.6,8),jk,0,1.2,0);add(new THREE.SphereGeometry(.11,10,8),sk,0,1.65,0);add(new THREE.SphereGeometry(.12,10,6,0,6.3,0,1.6),M(0x2a6fdb),0,1.68,0);
  add(new THREE.CylinderGeometry(.06,.05,.85,6),pn,-.09,.45,0,0,.05);add(new THREE.CylinderGeometry(.06,.05,.85,6),pn,.09,.45,0,0,-.05);
  add(new THREE.BoxGeometry(.11,.07,.24),bt,-.1,.04,-.04);add(new THREE.BoxGeometry(.11,.07,.24),bt,.1,.04,-.04);
  add(new THREE.CylinderGeometry(.045,.04,.55,6),jk,-.2,1.2,-.12,-.9,.2);add(new THREE.CylinderGeometry(.045,.04,.55,6),jk,.2,1.2,-.12,-.9,-.2);
- add(new THREE.TorusGeometry(.15,.02,5,12),M(0xf2b01e),0,.92,0,Math.PI/2);g.position.set(1.9,0,1.9);g.rotation.y=Math.PI;scene.add(g);
+ add(new THREE.TorusGeometry(.15,.02,5,12),M(0xf2b01e),0,.92,0,Math.PI/2);g.position.set(.9,0,1.4);g.rotation.y=Math.PI;scene.add(g);
  const rk=new THREE.MeshStandardMaterial({color:0x6d6760,roughness:1,flatShading:true}),rr=rng(5);for(let i=0;i<60;i++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.15+rr()*.6,0),rk);
   r.position.set((rr()*2-1)*18,0,1+rr()*14);r.scale.y=.5+rr()*.4;r.rotation.set(rr()*3,rr()*3,0);scene.add(r);}}
 function updateRope(harn){const pts=[belayAnchor,...S.pros.map(p=>p.clip),harn];const a=ropeGeo.attributes.position.array;let n=0;
@@ -250,8 +250,8 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
  const sl=S.limbs[S.sel];selMark.visible=S.mode==='climb';selMark.position.copy(sl.pos).add(V(0,0,.05));
  markT-=dt;if(markT<=0){markT=.2;updateMarks();}
  // camera
- const portrait=innerHeight>innerWidth;camY+=(ps.hip.y+.4-camY)*Math.min(1,dt*3);const dist=portrait?10.5:6.5;
- camera.fov=portrait?66:55;camera.updateProjectionMatrix();camera.position.set(ps.hip.x*.6+(portrait?2.2:3.5),camY+(portrait?-.6:.2),wallZ(ps.hip.x,ps.hip.y)+dist);camera.lookAt(ps.hip.x*.6+(portrait?.9:.6),camY+(portrait?.6:.2),wallZ(ps.hip.x,camY));
+ const portrait=innerHeight>innerWidth;camY+=(ps.hip.y+.4-2*Math.max(0,1-(ps.hip.y-S.startHip)/5)-camY)*Math.min(1,dt*3);const dist=portrait?12:10;
+ camera.fov=portrait?66:55;camera.updateProjectionMatrix();camera.position.set(ps.hip.x*.6+(portrait?2.2:3.5),camY+(portrait?-.6:-.6),wallZ(ps.hip.x,ps.hip.y)+dist);camera.lookAt(ps.hip.x*.6+(portrait?.9:.6),camY+(portrait?.6:.2),wallZ(ps.hip.x,camY));
  sky.position.copy(camera.position);{const a=Math.min(1,(getHeight()-BASE)/(TOP-BASE));sky.material.uniforms.alt.value=a;scene.fog.color.setRGB(.66-.3*a,.76-.3*a,.87-.25*a);}mountains.position.y=camY*.92;ground.visible=camY<120;sun.position.set(camera.position.x-12,camY+9,4);sun.target.position.set(0,camY,0);
  updateChunks(Math.min(camY,S.mode==='fall'?ps.hip.y:camY));
  // hud
@@ -262,7 +262,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
  renderer.render(scene,camera);}
 // ---------- init / API ----------
 function start(opts={}){setProps(opts.climber==='boy'?'boy':'girl');buildBody();for(const p of S.pros)scene.remove(p.mesh);S.pros=[];for(const b of bolts)b.used=0;for(const h of holds)h.prot=0;
- resetGear();S.stamina=1;S.grip=1;S.mode='climb';S.fall=null;S.restY=0;S.summit=false;S.started=true;updateChunks(0);attachNear(V(0,1.05,0));
+ resetGear();S.stamina=1;S.grip=1;S.mode='climb';S.fall=null;S.restY=0;S.summit=false;S.started=true;updateChunks(0);attachNear(V(0,4.2,0));
  const lp={};for(const L of LIMBS)lp[L]=S.limbs[L].pos;S.startHip=poseFrom(lp).hip.y;A()?.surface?.('rock');selectLimb('RH');return true;}
 setProps('girl');updateChunks(0);start({climber:'girl'});S.started=false;resize();requestAnimationFrame(frame);
 {let n=0;const iv=setInterval(()=>{if(document.getElementById('cl-ui')){document.body.classList.add('has-ui');clearInterval(iv);}if(++n>40)clearInterval(iv);},250);}
