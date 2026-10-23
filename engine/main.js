@@ -8,7 +8,7 @@ function vn(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf
  const a=h2(xi,yi),b=h2(xi+1,yi),c=h2(xi,yi+1),d=h2(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
 function fbm(x,y,o=4){let s=0,a=.5,f=1;for(let i=0;i<o;i++){s+=a*vn(x*f,y*f);f*=2.03;a*=.5;}return s;}
 const snowAt=(x,y)=>{const k=Math.min(1,Math.max(0,y)/(8849-5300));const n=fbm(x*.35+3,y*.35-5,3);const flat=Math.max(0,wallN(x,y).y)*1.5;return n+flat*.3+k*.7-.9;};
-const wallZ=(x,y)=>0.9*fbm(x*.18+7,y*.18)+0.14*vn(x*1.3,y*1.3)+0.05*vn(x*4.1,y*4.1)-0.5+Math.max(0,Math.abs(x)-5)*0.25;
+const wallZ=(x,y)=>0.9*fbm(x*.18+7,y*.18)+0.14*vn(x*1.3,y*1.3)+0.05*vn(x*4.1,y*4.1)-0.5-Math.max(0,Math.abs(x)-3)**2*0.35;
 function wallN(x,y){const e=.05;return V(-(wallZ(x+e,y)-wallZ(x-e,y))/(2*e),-(wallZ(x,y+e)-wallZ(x,y-e))/(2*e),1).normalize();}
 function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
 // ---------- renderer / scene ----------
@@ -27,10 +27,10 @@ const sky=new THREE.Mesh(new THREE.SphereGeometry(600,24,12),new THREE.ShaderMat
 scene.add(sky);
 // distant mountains
 const mountains=new THREE.Group();scene.add(mountains);
-{const mr=rng(99);const mat=new THREE.MeshLambertMaterial({color:0x7d8ea6,flatShading:true});const snow=new THREE.MeshLambertMaterial({color:0xeef3f8,flatShading:true});
+{const mr=rng(99);const mat=new THREE.MeshLambertMaterial({color:0x7d8ea6,flatShading:true,fog:false});const snow=new THREE.MeshLambertMaterial({color:0xeef3f8,flatShading:true,fog:false});
  for(let i=0;i<34;i++){const side=i%2?1:-1,hgt=90+mr()*170,r=35+mr()*55;const g=new THREE.ConeGeometry(r,hgt,7,1);
   const pa=g.attributes.position;for(let k=0;k<pa.count;k++)if(pa.getY(k)<hgt/2-1){pa.setX(k,pa.getX(k)*(0.8+mr()*.4));pa.setZ(k,pa.getZ(k)*(0.8+mr()*.4));}g.computeVertexNormals();
-  const m=new THREE.Mesh(g,mat);m.position.set(side*(40+mr()*230),hgt/2-40,-60-mr()*250+ (mr()<.4?320:0));mountains.add(m);
+  const m=new THREE.Mesh(g,mat);m.position.set(side*(70+mr()*220),hgt/2-40,-120-mr()*280);mountains.add(m);
   const cap=new THREE.Mesh(new THREE.ConeGeometry(r*0.5,hgt*0.5,7,1),snow);cap.position.set(m.position.x,m.position.y+hgt*0.25+.5,m.position.z);mountains.add(cap);}}
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.MeshLambertMaterial({color:0xdfe6ee}));ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
 // ---------- materials ----------
@@ -42,7 +42,7 @@ const metal=new THREE.MeshStandardMaterial({color:0xdfe3e8,metalness:1,roughness
 const holdGeo={jug:new THREE.SphereGeometry(.075,7,5),crimp:new THREE.BoxGeometry(.15,.025,.06),sloper:new THREE.SphereGeometry(.11,7,5)};
 const HQ={jug:1,crimp:.55,sloper:.45,crack:.8,ledge:1.2};
 // ---------- chunks ----------
-const CH=12,WW=24;const chunks=new Map();let holds=[],bolts=[];const holdMeshes=[],wallMeshes=[];
+const CH=12,WW=11;const chunks=new Map();let holds=[],bolts=[];const holdMeshes=[],wallMeshes=[];
 const LEDGE_EVERY=36;
 function addHold(list,g,x,y,type,extra={}){const z=wallZ(x,y);const n=wallN(x,y);const h={pos:V(x,y,z+0.05).addScaledVector(n,0.02),type,q:HQ[type],...extra};
  let m;if(type==='crack'){m=new THREE.Mesh(new THREE.BoxGeometry(.012+h.w*.008,.45,.01),holdMat.crack);}else if(type==='ledge'){return list.push(h),h;}else{m=new THREE.Mesh(holdGeo[type],holdMat[type]);
@@ -62,7 +62,7 @@ function buildChunk(i){const g=new THREE.Group();const y0=i*CH;const list=[],bl=
  for(let y=y0+(i===0?2.1:0.2);y<y0+CH;y+=0.36+R()*0.12){const n=3+(R()*3|0);
   for(let j=0;j<n;j++){const x=(R()*2-1)*(j<2?1:2.6);const r=R();const type=r<.3?'jug':r<.6?'crimp':r<.8?'sloper':'crack';
    addHold(list,g,x,y,type,type==='crack'?{w:[0.5,0.75,1,2,3,4][R()*6|0],taper:R()<.5}:{});}
-  if(R()<.25){const x=(R()*2-1)*9;addHold(list,g,x,y,R()<.5?'jug':'crimp');}}
+  if(R()<.25){const x=(R()*2-1)*3.5;addHold(list,g,x,y,R()<.5?'jug':'crimp');}}
  if(i===0){[[-.25,.35],[.25,.35],[-.5,1.0],[.5,1.0],[-.3,1.75],[.3,1.75],[0,1.4],[-.2,2.1]].forEach(([x,y],k)=>addHold(list,g,x,y,k<2?'jug':k%2?'jug':'crimp'));}
  for(let y=y0+3;y<y0+CH;y+=3){const x=(R()*2-1)*.8,z=wallZ(x,y);const b={pos:V(x,y,z+.03),n:wallN(x,y)};
   const hg=new THREE.Mesh(new THREE.BoxGeometry(.035,.07,.012),metal);hg.position.copy(b.pos);hg.lookAt(b.pos.clone().add(b.n));g.add(hg);
@@ -99,13 +99,13 @@ function ik(a,t,l1,l2,pole){const d0=t.clone().sub(a);let d=d0.length();const di
  const x=(l1*l1+d*d-l2*l2)/(2*d),h=Math.sqrt(Math.max(0,l1*l1-x*x));const perp=pole.clone().addScaledVector(dir,-pole.dot(dir)).normalize();
  return{j:a.clone().addScaledVector(dir,x).addScaledVector(perp,h),e:a.clone().addScaledVector(dir,d)};}
 // state
-const S={stamina:1,grip:1,sel:'RH',limbs:{},mode:'climb',pros:[],gear:null,cams:null,fallCbs:[],maxY:0,restY:0,started:false,summit:false,hip:V(),chest:V(),fall:null,startHip:0,msgT:0};
+const S={eq:{iceAxe:true,crampons:true,oxygen:true,downSuit:true,gloves:true},stamina:1,grip:1,sel:'RH',limbs:{},mode:'climb',pros:[],gear:null,cams:null,fallCbs:[],maxY:0,restY:0,started:false,summit:false,hip:V(),chest:V(),fall:null,startHip:0,msgT:0};
 function resetGear(){const I=Infinity;S.gear={quickdraw:I,cam:I,nut:I,carabiner:I,chalk:I,rope:I,iceAxe:I,crampons:I,oxygen:I,downSuit:I,gloves:I};S.cams=[0.5,0.75,1,2,3,4];}
 function poseFrom(lp){const hx=(lp.LH.x+lp.RH.x)/2,hy=(lp.LH.y+lp.RH.y)/2,fx=(lp.LF.x+lp.RF.x)/2,fy=(lp.LF.y+lp.RF.y)/2;
- const chest=V(hx*.7+fx*.3,hy-(P.arm1+P.arm2)*.42,0),hip=V(fx*.6+hx*.4,fy+(P.leg1+P.leg2)*.7,0);
- const m=chest.clone().add(hip).multiplyScalar(.5);let dir=chest.clone().sub(hip);if(dir.y<.2)dir.y=.2;dir.normalize();
+ const chest=V(hx*.8+fx*.2,hy-(P.arm1+P.arm2)*.78,0),hip=V(fx*.5+hx*.5,fy+(P.leg1+P.leg2)*.82,0);
+ const m=chest.clone().add(hip).multiplyScalar(.5);let dir=chest.clone().sub(hip);if(dir.y<.8)dir.y=.8;dir.normalize();
  chest.copy(m).addScaledVector(dir,P.torso/2);hip.copy(m).addScaledVector(dir,-P.torso/2);
- chest.z=wallZ(chest.x,chest.y)+.3*P.s;hip.z=wallZ(hip.x,hip.y)+.34*P.s;return{chest,hip};}
+ chest.z=wallZ(chest.x,chest.y)+.42*P.s;hip.z=wallZ(hip.x,hip.y)+.4*P.s;return{chest,hip};}
 function roots(ps){const r={};const sd=V(1,0,0);r.LH=ps.chest.clone().addScaledVector(sd,-P.sw/2);r.RH=ps.chest.clone().addScaledVector(sd,P.sw/2);
  r.LF=ps.hip.clone().addScaledVector(sd,-P.hw/2);r.RF=ps.hip.clone().addScaledVector(sd,P.hw/2);return r;}
 function valid(lp){const ps=poseFrom(lp),r=roots(ps);for(const L of LIMBS){const len=L[1]==='H'?P.arm1+P.arm2:P.leg1+P.leg2;if(lp[L].distanceTo(r[L])>len*1.4)return false;}
@@ -158,7 +158,8 @@ function placeGear(type){if(!S.gear)resetGear();if(S.mode!=='climb')return false
   if(type==='cam'){size=S.cams.reduce((a,c)=>Math.abs(c-best.w)<Math.abs(a-best.w)?c:a,S.cams[0]);const df=Math.abs(size-best.w)/best.w;q=df<.2?'good':df<.6?'okay':'bad';A()?.cam?.();}
   else{q=best.taper?(best.w<=1?'good':'okay'):'bad';A()?.nut?.();}
   best.prot=1;const d=makePiece(best,type,size);S.pros.push({type,q,size,pos:best.pos.clone(),hold:best,...d});msg(type+' placed ('+q+')');return true;}
- if(['iceAxe','crampons','oxygen','downSuit','gloves'].includes(type)){msg(type+' ready');return true;}
+ if(['iceAxe','crampons'].includes(type)){S.eq[type]=true;msg((type==='iceAxe'?'Ice axe':'Crampons')+' equipped for ice');type==='iceAxe'?A()?.iceAxe?.():A()?.crampon?.();return true;}
+ if(['oxygen','downSuit','gloves'].includes(type)){S.eq[type]=!S.eq[type];msg(type+(S.eq[type]?' on':' off'));return true;}
  if(type==='carabiner'){msg('Carabiner racked');return true;}
  if(type==='rope'){A()?.ropeFeed?.();msg('Rope fed');return true;}return false;}
 // ---------- fall ----------
@@ -229,7 +230,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
   // stamina model
   let hq=0,fq=0,hc=0,fc=0;for(const L of LIMBS){const h=S.limbs[L].hold;if(!h)continue;if(L[1]==='H'){hq+=h.q;hc++;}else{fq+=h.q;fc++;}}
   const gripF=.4+.6*S.grip,support=hq*gripF+fq*.7;const onLedge=fc===2&&S.limbs.LF.hold.type==='ledge'&&S.limbs.RF.hold.type==='ledge';
-  const altF=getHeight()>=8000?.6:1,coldF=1+Math.min(1,(getHeight()-5300)/3549)*.3;const effort=Math.max(0,Math.min(1,(2.6-support)/2.2));S.effort=effort;
+  const altF=getHeight()>=8000?(S.eq.oxygen?.6:1.4):1,coldF=1+Math.min(1,(getHeight()-5300)/3549)*(.3+(S.eq.downSuit?0:.5)+(S.eq.gloves?0:.5));const effort=Math.max(0,Math.min(1,(2.6-support)/2.2));S.effort=effort;
   if(onLedge){S.stamina=Math.min(1,S.stamina+dt*.15);S.grip=Math.min(1,S.grip+dt*.05);}
   else{S.stamina+= support>2.4?dt*.02:-dt*altF*(.004+.05*effort*effort+(fc===0?.05:0));S.grip-=dt*coldF*(.004+.012*effort);}
   S.stamina=Math.max(0,Math.min(1,S.stamina));S.grip=Math.max(0,Math.min(1,S.grip));
@@ -249,8 +250,8 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
  const sl=S.limbs[S.sel];selMark.visible=S.mode==='climb';selMark.position.copy(sl.pos).add(V(0,0,.05));
  markT-=dt;if(markT<=0){markT=.2;updateMarks();}
  // camera
- const portrait=innerHeight>innerWidth;camY+=(ps.hip.y+.4-camY)*Math.min(1,dt*3);const dist=portrait?8.5:5.2;
- camera.position.set(ps.hip.x*.6+(portrait?1.6:2.4),camY+(portrait?.3:.5),wallZ(ps.hip.x,ps.hip.y)+dist);camera.lookAt(ps.hip.x*.8,camY+.2,wallZ(ps.hip.x,camY));
+ const portrait=innerHeight>innerWidth;camY+=(ps.hip.y+.4-camY)*Math.min(1,dt*3);const dist=portrait?10.5:6.5;
+ camera.fov=portrait?66:55;camera.updateProjectionMatrix();camera.position.set(ps.hip.x*.6+(portrait?3:4.5),camY+(portrait?-.6:-.3),wallZ(ps.hip.x,ps.hip.y)+dist);camera.lookAt(ps.hip.x*.8+(portrait?2.5:-1.2),camY+.6,wallZ(ps.hip.x,camY));
  sky.position.copy(camera.position);{const a=Math.min(1,(getHeight()-BASE)/(TOP-BASE));sky.material.uniforms.alt.value=a;scene.fog.color.setRGB(.66-.3*a,.76-.3*a,.87-.25*a);}mountains.position.y=camY*.92;ground.visible=camY<120;sun.position.set(camera.position.x-12,camY+9,4);sun.target.position.set(0,camY,0);
  updateChunks(Math.min(camY,S.mode==='fall'?ps.hip.y:camY));
  // hud

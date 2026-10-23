@@ -1,6 +1,6 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#87a9cf;touch-action:none;-webkit-user-select:none;user-select:none;font-family:-apple-system,system-ui,sans-serif}
 #game,#game canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-#credit{position:fixed;right:8px;bottom:calc(6px + env(safe-area-inset-bottom));font-size:11px;color:#fff;opacity:.8;text-shadow:0 1px 2px #000;pointer-events:none;z-index:50}
+#credit{position:fixed;left:50%;transform:translateX(-50%);top:calc(4px + env(safe-area-inset-top));white-space:nowrap;font-size:11px;color:#fff;opacity:.8;text-shadow:0 1px 2px #000;pointer-events:none;z-index:50}
 .climb-hud{position:fixed;z-index:20;color:#fff;text-shadow:0 1px 2px #000;font-size:13px}
 body.has-ui .climb-hud{display:none!important}
 #hud-bars{top:calc(8px + env(safe-area-inset-top));left:8px;width:150px}

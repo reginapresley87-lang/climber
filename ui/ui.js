@@ -3,7 +3,7 @@ const C=()=>window.CLIMB||MOCK;
 const MOCK={st:1,gr:1,h:0,gear:{rope:Infinity,chalk:Infinity,cam:Infinity,nut:Infinity,quickdraw:Infinity,carabiner:Infinity},
  getStamina(){return this.st},getGrip(){return this.gr},getHeight(){return this.h},getGear(){return this.gear},
  placeGear(t){return this.gear[t]>0},selectLimb(n){this.limb=n},onFall(cb){}};
-const GEAR=[['quickdraw','\u{1f517}','Quickdraw'],['cam','\u{2699}\u{fe0f}','Cam'],['nut','\u{1f529}','Nut'],['carabiner','\u{1fa9d}','Carabiner'],['chalk','\u{1f90d}','Chalk'],['rope','\u{1faa2}','Rope']];
+const GEAR=[['quickdraw','\u{1f517}','Quickdraw'],['cam','\u{2699}\u{fe0f}','Cam'],['nut','\u{1f529}','Nut'],['carabiner','\u{1fa9d}','Carabiner'],['chalk','\u{1f9c2}','Chalk'],['rope','\u{1faa2}','Rope'],['iceAxe','\u{26cf}\u{fe0f}','Ice axe'],['crampons','\u{1f97e}','Crampons'],['oxygen','\u{1fae7}','Oxygen'],['downSuit','\u{1f9e5}','Down suit'],['gloves','\u{1f9e4}','Gloves']];
 const ui=document.createElement('div');ui.id='cl-ui';
 ui.innerHTML=`<div id="cl-title"><h1>CLIMBER</h1><div class="pick"><button data-c="girl" class="on">\u{1f467} Girl</button><button data-c="boy">\u{1f466} Boy</button></div><button id="cl-play">Climb</button><div class="credit">Made by Nova Labs \u{2b50}</div></div>
 <div id="cl-bars"><div>Stamina</div><div class="cl-bar" id="cl-stam"><i></i></div><div>Grip</div><div class="cl-bar" id="cl-grip"><i></i></div></div>
