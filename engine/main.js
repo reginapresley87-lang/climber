@@ -7,6 +7,7 @@ function h2(x,y){let n=x*374761393+y*668265263;n=(n^(n>>>13))*1274126177;return 
 function vn(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
  const a=h2(xi,yi),b=h2(xi+1,yi),c=h2(xi,yi+1),d=h2(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;}
 function fbm(x,y,o=4){let s=0,a=.5,f=1;for(let i=0;i<o;i++){s+=a*vn(x*f,y*f);f*=2.03;a*=.5;}return s;}
+const snowAt=(x,y)=>{const k=Math.min(1,Math.max(0,y)/(8849-5300));const n=fbm(x*.35+3,y*.35-5,3);const flat=Math.max(0,wallN(x,y).y)*1.5;return n+flat*.3+k*.7-.9;};
 const wallZ=(x,y)=>0.9*fbm(x*.18+7,y*.18)+0.14*vn(x*1.3,y*1.3)+0.05*vn(x*4.1,y*4.1)-0.5+Math.max(0,Math.abs(x)-5)*0.25;
 function wallN(x,y){const e=.05;return V(-(wallZ(x+e,y)-wallZ(x-e,y))/(2*e),-(wallZ(x,y+e)-wallZ(x,y-e))/(2*e),1).normalize();}
 function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
@@ -22,16 +23,16 @@ const sun=new THREE.DirectionalLight(0xfff1d6,2.2);sun.position.set(-6,10,8);sce
 // sky
 const sky=new THREE.Mesh(new THREE.SphereGeometry(600,24,12),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,fog:false,
  vertexShader:'varying vec3 p;void main(){p=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
- fragmentShader:'varying vec3 p;void main(){float h=clamp(p.y*1.4+.15,0.,1.);vec3 c=mix(vec3(.80,.87,.94),vec3(.25,.50,.85),h);float s=pow(max(dot(p,normalize(vec3(-.5,.5,.6))),0.),300.);gl_FragColor=vec4(c+s*vec3(1.,.9,.7),1.);}'}));
+ uniforms:{alt:{value:0}},fragmentShader:'uniform float alt;varying vec3 p;void main(){float h=clamp(p.y*1.4+.15,0.,1.);vec3 c=mix(mix(vec3(.80,.87,.94),vec3(.55,.68,.85),alt),mix(vec3(.25,.50,.85),vec3(.05,.12,.35),alt),h);float s=pow(max(dot(p,normalize(vec3(-.5,.5,.6))),0.),300.);gl_FragColor=vec4(c+s*vec3(1.,.9,.7),1.);}'}));
 scene.add(sky);
 // distant mountains
 const mountains=new THREE.Group();scene.add(mountains);
 {const mr=rng(99);const mat=new THREE.MeshLambertMaterial({color:0x7d8ea6,flatShading:true});const snow=new THREE.MeshLambertMaterial({color:0xeef3f8,flatShading:true});
- for(let i=0;i<26;i++){const side=i%2?1:-1,hgt=40+mr()*90,r=30+mr()*50;const g=new THREE.ConeGeometry(r,hgt,7,1);
+ for(let i=0;i<34;i++){const side=i%2?1:-1,hgt=90+mr()*170,r=35+mr()*55;const g=new THREE.ConeGeometry(r,hgt,7,1);
   const pa=g.attributes.position;for(let k=0;k<pa.count;k++)if(pa.getY(k)<hgt/2-1){pa.setX(k,pa.getX(k)*(0.8+mr()*.4));pa.setZ(k,pa.getZ(k)*(0.8+mr()*.4));}g.computeVertexNormals();
-  const m=new THREE.Mesh(g,mat);m.position.set(side*(45+mr()*220),hgt/2-25,-60-mr()*250+ (mr()<.4?320:0));mountains.add(m);
-  const cap=new THREE.Mesh(new THREE.ConeGeometry(r*0.28,hgt*0.28,7,1),snow);cap.position.set(m.position.x,m.position.y+hgt*0.36,m.position.z);mountains.add(cap);}}
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.MeshLambertMaterial({color:0x6f7a4a}));ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
+  const m=new THREE.Mesh(g,mat);m.position.set(side*(40+mr()*230),hgt/2-40,-60-mr()*250+ (mr()<.4?320:0));mountains.add(m);
+  const cap=new THREE.Mesh(new THREE.ConeGeometry(r*0.5,hgt*0.5,7,1),snow);cap.position.set(m.position.x,m.position.y+hgt*0.25+.5,m.position.z);mountains.add(cap);}}
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.MeshLambertMaterial({color:0xdfe6ee}));ground.rotation.x=-Math.PI/2;ground.position.y=-0.02;scene.add(ground);
 // ---------- materials ----------
 const rockMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.95,metalness:0});
 const holdMat={jug:new THREE.MeshStandardMaterial({color:0xb7a690,roughness:.9}),crimp:new THREE.MeshStandardMaterial({color:0xa89a86,roughness:.9}),
@@ -50,8 +51,11 @@ function addHold(list,g,x,y,type,extra={}){const z=wallZ(x,y);const n=wallN(x,y)
 function buildChunk(i){const g=new THREE.Group();const y0=i*CH;const list=[],bl=[];
  const geo=new THREE.PlaneGeometry(WW,CH,64,32);const pa=geo.attributes.position;const col=[];
  for(let k=0;k<pa.count;k++){const x=pa.getX(k),y=pa.getY(k)+y0+CH/2;pa.setY(k,y);const z=wallZ(x,y);pa.setZ(k,z);
-  const n=fbm(x*.9,y*.9,3),st=.5+.5*Math.sin(y*3.1+fbm(x*.3,y*.3)*6);const c=.38+.25*n+.06*st+ z*.12;
-  col.push(c*1.05,c*.97,c*.88);}
+  const n=fbm(x*.9,y*.9,3),st=.5+.5*Math.sin(y*3.1+fbm(x*.3,y*.3)*6),c=.36+.25*n+.07*st+z*.12;
+  const lime=Math.min(1,Math.max(0,(fbm(x*.08+20,y*.06)-.4)*4)),streak=.5+.5*Math.sin(x*9+fbm(x*2,y*.15)*8);
+  let r=c*(1.02+lime*.25)-streak*.05*lime,gg=c*(.98+lime*.12),b=c*(.92-lime*.08)+ (1-lime)*.03;const iron=Math.max(0,fbm(x*.5,y*.5+9,2)-.62)*1.6;r+=iron*.25;gg+=iron*.08;
+  const sn=snowAt(x,y);if(sn>0){const t=Math.min(1,sn*6);const ice=vn(x*.7+50,y*.7)>.6;const sc=ice?[.72,.85,.95]:[.94,.96,1];r+=(sc[0]-r)*t;gg+=(sc[1]-gg)*t;b+=(sc[2]-b)*t;}
+  col.push(r,gg,b);}
  geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));geo.computeVertexNormals();
  const wall=new THREE.Mesh(geo,rockMat);g.add(wall);wall.userData.wall=1;
  const R=rng(1000+i*7919);
@@ -96,16 +100,16 @@ function ik(a,t,l1,l2,pole){const d0=t.clone().sub(a);let d=d0.length();const di
  return{j:a.clone().addScaledVector(dir,x).addScaledVector(perp,h),e:a.clone().addScaledVector(dir,d)};}
 // state
 const S={stamina:1,grip:1,sel:'RH',limbs:{},mode:'climb',pros:[],gear:null,cams:null,fallCbs:[],maxY:0,restY:0,started:false,summit:false,hip:V(),chest:V(),fall:null,startHip:0,msgT:0};
-function resetGear(){S.gear={quickdraw:10,cam:6,nut:6,carabiner:12,chalk:5,rope:1};S.cams=[0.5,0.75,1,2,3,4];}
+function resetGear(){const I=Infinity;S.gear={quickdraw:I,cam:I,nut:I,carabiner:I,chalk:I,rope:I,iceAxe:I,crampons:I,oxygen:I,downSuit:I,gloves:I};S.cams=[0.5,0.75,1,2,3,4];}
 function poseFrom(lp){const hx=(lp.LH.x+lp.RH.x)/2,hy=(lp.LH.y+lp.RH.y)/2,fx=(lp.LF.x+lp.RF.x)/2,fy=(lp.LF.y+lp.RF.y)/2;
- const chest=V(hx*.7+fx*.3,hy-(P.arm1+P.arm2)*.62,0),hip=V(fx*.6+hx*.4,fy+(P.leg1+P.leg2)*.7,0);
+ const chest=V(hx*.7+fx*.3,hy-(P.arm1+P.arm2)*.5,0),hip=V(fx*.6+hx*.4,fy+(P.leg1+P.leg2)*.7,0);
  const m=chest.clone().add(hip).multiplyScalar(.5);let dir=chest.clone().sub(hip);if(dir.y<.2)dir.y=.2;dir.normalize();
  chest.copy(m).addScaledVector(dir,P.torso/2);hip.copy(m).addScaledVector(dir,-P.torso/2);
  chest.z=wallZ(chest.x,chest.y)+.3*P.s;hip.z=wallZ(hip.x,hip.y)+.34*P.s;return{chest,hip};}
 function roots(ps){const r={};const sd=V(1,0,0);r.LH=ps.chest.clone().addScaledVector(sd,-P.sw/2);r.RH=ps.chest.clone().addScaledVector(sd,P.sw/2);
  r.LF=ps.hip.clone().addScaledVector(sd,-P.hw/2);r.RF=ps.hip.clone().addScaledVector(sd,P.hw/2);return r;}
-function valid(lp){const ps=poseFrom(lp),r=roots(ps);for(const L of LIMBS){const len=L[1]==='H'?P.arm1+P.arm2:P.leg1+P.leg2;if(lp[L].distanceTo(r[L])>len*1.02)return false;}
- if(Math.min(lp.LH.y,lp.RH.y)<Math.max(lp.LF.y,lp.RF.y)+.25)return false;if(Math.abs(lp.LH.x-lp.RH.x)>1.5||Math.abs(lp.LF.x-lp.RF.x)>1.2)return false;return true;}
+function valid(lp){const ps=poseFrom(lp),r=roots(ps);for(const L of LIMBS){const len=L[1]==='H'?P.arm1+P.arm2:P.leg1+P.leg2;if(lp[L].distanceTo(r[L])>len*1.25)return false;}
+ if(Math.min(lp.LH.y,lp.RH.y)<Math.max(lp.LF.y,lp.RF.y)+.15)return false;if(Math.abs(lp.LH.x-lp.RH.x)>1.5||Math.abs(lp.LF.x-lp.RF.x)>1.2)return false;return true;}
 function curLP(){const o={};for(const L of LIMBS)o[L]=(S.limbs[L].to||S.limbs[L].pos).clone();return o;}
 function canMove(L,h){if(h.type==='crack'&&L[1]==='F'&&false)return false;for(const K of LIMBS)if(K!==L&&S.limbs[K].hold===h&&h.type!=='ledge'&&h.type!=='jug')return false;const lp=curLP();lp[L]=h.pos.clone();return valid(lp);}
 function msg(t){(window.CLIMB_UI&&window.CLIMB_UI.toast)?window.CLIMB_UI.toast(t):(hudMsg.textContent=t,hudMsg.style.opacity=1,S.msgT=1.4);}
@@ -137,18 +141,19 @@ function makePiece(h,type,size){const g=new THREE.Group();const col=type==='cam'
  const bn=biner();bn.position.y=-.14;g.add(bn);g.position.copy(h.pos).add(V(0,.05,0));scene.add(g);return{mesh:g,clip:g.position.clone().add(V(0,-.15,.03))};}
 function harnessPos(){return S.hip.clone().add(V(0,.02,.12));}
 function placeGear(type){if(!S.gear)resetGear();if(S.mode!=='climb')return false;const hp=harnessPos();
- if(type==='chalk'){if(S.gear.chalk<=0)return false;S.gear.chalk--;S.grip=Math.min(1,S.grip+.5);A()?.chalk?.();return true;}
+ if(type==='chalk'){S.grip=Math.min(1,S.grip+.5);A()?.chalk?.();return true;}
  if(type==='quickdraw'){if(S.gear.quickdraw<=0)return false;let best=null,bd=1.7;for(const b of bolts){if(b.used)continue;const d=b.pos.distanceTo(hp);if(d<bd&&b.pos.y>hp.y-.6){bd=d;best=b;}}
-  if(!best){msg('No bolt in reach');return false;}best.used=1;S.gear.quickdraw--;const d=makeDraw(best);S.pros.push({type:'quickdraw',q:'good',pos:best.pos,...d,bolt:best});
+  if(!best){msg('No bolt in reach');return false;}best.used=1;const d=makeDraw(best);S.pros.push({type:'quickdraw',q:'good',pos:best.pos,...d,bolt:best});
   A()?.clip?.();setTimeout(()=>A()?.clip?.(),260);return true;}
- if(type==='cam'||type==='nut'){if(S.gear[type]<=0)return false;if(S.gear.carabiner<=0){msg('No carabiners');return false;}
+ if(type==='cam'||type==='nut'){if(S.gear[type]<=0)return false;
   let best=null,bd=1.5;for(const h of holds){if(h.type!=='crack'||h.prot)continue;const d=h.pos.distanceTo(hp);if(d<bd&&h.pos.y>hp.y-.6){bd=d;best=h;}}
   if(!best){msg('No crack in reach');return false;}let q,size;
-  if(type==='cam'){size=S.cams.reduce((a,c)=>Math.abs(c-best.w)<Math.abs(a-best.w)?c:a,S.cams[0]);S.cams.splice(S.cams.indexOf(size),1);const df=Math.abs(size-best.w)/best.w;q=df<.2?'good':df<.6?'okay':'bad';A()?.cam?.();}
+  if(type==='cam'){size=S.cams.reduce((a,c)=>Math.abs(c-best.w)<Math.abs(a-best.w)?c:a,S.cams[0]);const df=Math.abs(size-best.w)/best.w;q=df<.2?'good':df<.6?'okay':'bad';A()?.cam?.();}
   else{q=best.taper?(best.w<=1?'good':'okay'):'bad';A()?.nut?.();}
-  S.gear[type]--;S.gear.carabiner--;best.prot=1;const d=makePiece(best,type,size);S.pros.push({type,q,size,pos:best.pos.clone(),hold:best,...d});msg(type+' placed ('+q+')');return true;}
- if(type==='carabiner'){msg('Carabiners are used with cams & nuts');return false;}
- if(type==='rope'){A()?.ropeFeed?.();msg('Rope is tied in');return false;}return false;}
+  best.prot=1;const d=makePiece(best,type,size);S.pros.push({type,q,size,pos:best.pos.clone(),hold:best,...d});msg(type+' placed ('+q+')');return true;}
+ if(['iceAxe','crampons','oxygen','downSuit','gloves'].includes(type)){msg(type+' ready');return true;}
+ if(type==='carabiner'){msg('Carabiner racked');return true;}
+ if(type==='rope'){A()?.ropeFeed?.();msg('Rope fed');return true;}return false;}
 // ---------- fall ----------
 function startFall(reason){if(S.mode!=='climb')return;S.mode='fall';A()?.slip?.();A()?.fall?.();const hp=S.hip.clone();
  let anchor=null,idx=-1;for(let i=S.pros.length-1;i>=0;i--){const p=S.pros[i];const holdsIt=p.q==='good'||(p.q==='okay'&&Math.random()<.7);if(holdsIt){anchor=p;idx=i;break;}
@@ -171,7 +176,7 @@ function stepFall(dt){const f=S.fall;f.t+=dt;f.v.y-=9.8*dt;f.v.multiplyScalar(1-
  const lp={LH:ps.chest.clone().add(V(-.35,.35+w,.15)),RH:ps.chest.clone().add(V(.35,.35-w,.15)),LF:ps.hip.clone().add(V(-.2,-.75,.2-w)),RF:ps.hip.clone().add(V(.2,-.75,.2+w))};
  for(const L of LIMBS)S.limbs[L]={pos:lp[L],hold:null};return ps;}
 function endFall(){const f=S.fall;const dist=Math.max(0,f.y0-f.p.y);S.mode='climb';S.fall=null;attachNear(f.p.clone().add(V(0,.3,0)));
- S.stamina=Math.max(S.stamina,.45);S.grip=Math.max(S.grip,.5);const info={caught:f.caught,distance:+dist.toFixed(2),height:getHeight(),protection:f.anchor?f.anchor.type:null};
+ S.grace=1.5;S.stamina=Math.max(S.stamina,.45);S.grip=Math.max(S.grip,.5);const info={caught:f.caught,distance:+dist.toFixed(2),height:getHeight(),protection:f.anchor?f.anchor.type:null};
  S.fallCbs.forEach(cb=>{try{cb(info)}catch(e){}});}
 // ---------- input ----------
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
@@ -184,7 +189,7 @@ renderer.domElement.addEventListener('pointerup',e=>{if(!down)return;if(Math.hyp
 function tapHold(h){if(S.mode!=='climb')return;if(canMove(S.sel,h)){moveLimb(S.sel,h);return;}
  // auto-pick another limb if selected can't reach
  for(const L of LIMBS)if(L!==S.sel&&canMove(L,h)){selectLimb(L);moveLimb(L,h);return;}msg('Out of reach');}
-function bestMove(L){let best=null,bs=-1e9;for(const h of holds){if(Math.abs(h.pos.y-S.limbs[L].pos.y)>1.4)continue;if(!canMove(L,h))continue;const s=h.pos.y-S.limbs[L].pos.y+h.q*.25-Math.abs(h.pos.x)*.2;if(s>bs){bs=s;best=h;}}return best;}
+function bestMove(L){let best=null,bs=-1e9;for(const h of holds){if(Math.abs(h.pos.y-S.limbs[L].pos.y)>2)continue;if(!canMove(L,h))continue;const s=h.pos.y-S.limbs[L].pos.y+h.q*.1-Math.abs(h.pos.x)*.2;if(s>bs){bs=s;best=h;}}return best;}
 function autoMove(){if(S.mode!=='climb')return false;const order=[...LIMBS].sort((a,b)=>S.limbs[a].pos.y-S.limbs[b].pos.y);
  for(const L of order){const h=bestMove(L);if(h&&h.pos.y>S.limbs[L].pos.y+.05){selectLimb(L);return moveLimb(L,h);}}return false;}
 addEventListener('keydown',e=>{const k=e.key.toLowerCase();const m={'1':'LH','2':'RH','3':'LF','4':'RF',q:'LH',w:'RH',a:'LF',s:'RF'};
@@ -204,23 +209,23 @@ const selMark=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),new THREE.MeshBas
 let markT=0;function updateMarks(){let n=0;if(S.mode==='climb')for(const h of holds){if(n>=marks.length)break;if(Math.abs(h.pos.y-S.limbs[S.sel].pos.y)>1.5||h===S.limbs[S.sel].hold)continue;if(h.type==='ledge'&&h.pos.x*10%6)continue;
  if(canMove(S.sel,h)){const m=marks[n++];m.visible=true;m.position.copy(h.pos).add(V(0,0,.06));}}for(;n<marks.length;n++)marks[n].visible=false;}
 // ---------- main loop ----------
-function getHeight(){return Math.max(0,+(S.hip.y-S.startHip).toFixed(1));}
+const SCALE=4;const BASE=5300,TOP=8849;function getHeight(){return Math.round(BASE+Math.max(0,S.hip.y-S.startHip)*SCALE);}
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);addEventListener('orientationchange',()=>setTimeout(resize,250));
 let last=performance.now(),audT=0,camY=1.5;
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last)/1000);last=now;
  let ps;if(S.mode==='fall')ps=stepFall(dt);else{
   for(const L of LIMBS){const l=S.limbs[L];if(l.to){l.t+=dt/.35;const t=Math.min(1,l.t);l.pos.lerpVectors(l.from,l.to,t);l.pos.z+=Math.sin(t*Math.PI)*.15;
-   if(t>=1){l.pos.copy(l.to);l.hold=l.next;l.to=l.next=null;L[1]==='H'?A()?.grip?.(l.hold.q):A()?.footstep?.();if(l.hold.ledge!==undefined){S.restY=Math.max(S.restY,l.hold.ledge);}}}}
+   if(t>=1){l.pos.copy(l.to);l.hold=l.next;l.to=l.next=null;L[1]==='H'?A()?.grip?.(l.hold.q):A()?.footstep?.();{const sn=snowAt(l.hold.pos.x,l.hold.pos.y);const sf=sn>0?(vn(l.hold.pos.x*.7+50,l.hold.pos.y*.7)>.6?'ice':'snow'):'rock';if(sf!==S.surf){S.surf=sf;A()?.surface?.(sf);}if(sf==='ice')(L[1]==='H'?A()?.iceAxe?.():A()?.crampon?.());}if(l.hold.ledge!==undefined){S.restY=Math.max(S.restY,l.hold.ledge);}}}}
   ps=poseFrom(curLP());const lp={};for(const L of LIMBS)lp[L]=S.limbs[L].pos;ps=poseFrom(lp);
   // stamina model
   let hq=0,fq=0,hc=0,fc=0;for(const L of LIMBS){const h=S.limbs[L].hold;if(!h)continue;if(L[1]==='H'){hq+=h.q;hc++;}else{fq+=h.q;fc++;}}
   const gripF=.4+.6*S.grip,support=hq*gripF+fq*.7;const onLedge=fc===2&&S.limbs.LF.hold.type==='ledge'&&S.limbs.RF.hold.type==='ledge';
-  const effort=Math.max(0,Math.min(1,(2.6-support)/2.2));S.effort=effort;
-  if(onLedge){S.stamina=Math.min(1,S.stamina+dt*.15);S.grip=Math.min(1,S.grip+dt*.05);if(S.gear&&S.gear.chalk<5&&Math.random()<dt*.3)S.gear.chalk++;}
-  else{S.stamina+= support>2.4?dt*.02:-dt*(.004+.05*effort*effort+(fc===0?.05:0));S.grip-=dt*(.004+.012*effort);}
+  const altF=getHeight()>=8000?.6:1,coldF=1+Math.min(1,(getHeight()-5300)/3549)*.3;const effort=Math.max(0,Math.min(1,(2.6-support)/2.2));S.effort=effort;
+  if(onLedge){S.stamina=Math.min(1,S.stamina+dt*.15);S.grip=Math.min(1,S.grip+dt*.05);}
+  else{S.stamina+= support>2.4?dt*.02:-dt*altF*(.004+.05*effort*effort+(fc===0?.05:0));S.grip-=dt*coldF*(.004+.012*effort);}
   S.stamina=Math.max(0,Math.min(1,S.stamina));S.grip=Math.max(0,Math.min(1,S.grip));
-  if(S.started||true){if(hc===0&&!S.limbs.LH.to&&!S.limbs.RH.to)startFall('Lost hold!');else if(hc===0&&fc<2)startFall('Peeled off!');
+  S.grace=(S.grace||0)-dt;if(S.grace<=0){if(hc===0&&!S.limbs.LH.to&&!S.limbs.RH.to)startFall('Lost hold!');else if(hc===0&&fc<2)startFall('Peeled off!');
    else if(S.stamina<=0)startFall('Pumped out!');else if(S.grip<.08&&hq<2)startFall('Hands slipped!');}
  }
  S.hip.copy(ps.hip);S.chest.copy(ps.chest);if(S.mode==='climb')S.maxY=Math.max(S.maxY,ps.hip.y);
@@ -238,10 +243,10 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
  // camera
  const portrait=innerHeight>innerWidth;camY+=(ps.hip.y+.4-camY)*Math.min(1,dt*3);const dist=portrait?8.5:5.2;
  camera.position.set(ps.hip.x*.6+(portrait?1.6:2.4),camY+(portrait?.3:.5),wallZ(ps.hip.x,ps.hip.y)+dist);camera.lookAt(ps.hip.x*.8,camY+.2,wallZ(ps.hip.x,camY));
- sky.position.copy(camera.position);mountains.position.y=camY*.92;ground.visible=camY<120;sun.position.set(camera.position.x-12,camY+9,4);sun.target.position.set(0,camY,0);
+ sky.position.copy(camera.position);{const a=Math.min(1,(getHeight()-BASE)/(TOP-BASE));sky.material.uniforms.alt.value=a;scene.fog.color.setRGB(.66-.3*a,.76-.3*a,.87-.25*a);}mountains.position.y=camY*.92;ground.visible=camY<120;sun.position.set(camera.position.x-12,camY+9,4);sun.target.position.set(0,camY,0);
  updateChunks(Math.min(camY,S.mode==='fall'?ps.hip.y:camY));
  // hud
- hud.querySelector('#hb-s').style.width=S.stamina*100+'%';hud.querySelector('#hb-g').style.width=S.grip*100+'%';hud.querySelector('#hb-h').textContent=Math.round(getHeight())+' m';
+ hud.querySelector('#hb-s').style.width=S.stamina*100+'%';hud.querySelector('#hb-g').style.width=S.grip*100+'%';hud.querySelector('#hb-h').textContent=getHeight().toLocaleString('en-US')+' m';
  if(S.msgT>0){S.msgT-=dt;if(S.msgT<=0)hudMsg.style.opacity=0;}
  audT-=dt;if(audT<=0){audT=.2;const au=A();if(au){const alt=getHeight();au.wind?.(alt);au.breathing?.(S.effort||0);if(S.stamina<.3)au.heartbeat?.(1-S.stamina/.3);au.weather?.('clear');au.setMusicIntensity?.(Math.min(1,(S.effort||0)*.6+(S.mode==='fall'?1:0)));
   if(!S.summit&&alt>=8849){S.summit=true;au.summit?.();msg('Summit! 8,849 m');}}}
@@ -253,5 +258,5 @@ function start(opts={}){setProps(opts.climber==='boy'?'boy':'girl');buildBody();
 setProps('girl');updateChunks(0);start({climber:'girl'});S.started=false;resize();requestAnimationFrame(frame);
 setTimeout(()=>{if(document.getElementById('cl-ui'))document.body.classList.add('has-ui');},300);
 window.CLIMB={getStamina:()=>S.stamina,getGrip:()=>S.grip,getGear:()=>({...S.gear}),placeGear,selectLimb,onFall:cb=>{if(typeof cb==='function')S.fallCbs.push(cb);},
- start,getHeight,getCamSizes:()=>[...S.cams],autoMove,getSelectedLimb:()=>S.sel,isFalling:()=>S.mode==='fall'};
+ start,getHeight,getCamSizes:()=>[...S.cams],autoMove,getSelectedLimb:()=>S.sel,isFalling:()=>S.mode==='fall',testFall:()=>startFall('Test fall')};
 window.dispatchEvent(new Event('climb-ready'));
