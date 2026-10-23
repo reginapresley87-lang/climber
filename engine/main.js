@@ -250,8 +250,8 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
  const sl=S.limbs[S.sel];selMark.visible=S.mode==='climb';selMark.position.copy(sl.pos).add(V(0,0,.05));
  markT-=dt;if(markT<=0){markT=.2;updateMarks();}
  // camera
- const portrait=innerHeight>innerWidth;camY+=(ps.hip.y+.4-2*Math.max(0,1-(ps.hip.y-S.startHip)/5)-camY)*Math.min(1,dt*3);const dist=portrait?12:10;
- camera.fov=portrait?66:55;camera.updateProjectionMatrix();camera.position.set(ps.hip.x*.6+(portrait?2.2:3.5),camY+(portrait?-.6:-.6),wallZ(ps.hip.x,ps.hip.y)+dist);camera.lookAt(ps.hip.x*.6+(portrait?.9:.6),camY+(portrait?.6:.2),wallZ(ps.hip.x,camY));
+ const portrait=innerHeight>innerWidth;camY+=(ps.hip.y+.4-2*Math.max(0,1-(ps.hip.y-S.startHip)/5)-camY)*Math.min(1,dt*3);const dist=portrait?8.5:8;
+ camera.fov=portrait?66:55;camera.updateProjectionMatrix();{const wz=wallZ(ps.hip.x,ps.hip.y);S.camZ=S.camZ==null?wz:S.camZ+(wz-S.camZ)*Math.min(1,dt*2);camera.position.set(ps.hip.x*.6+(portrait?2:3.2),camY-1,S.camZ+dist);camera.lookAt(ps.hip.x*.6+(portrait?.8:.6),camY+.2,S.camZ);}
  sky.position.copy(camera.position);{const a=Math.min(1,(getHeight()-BASE)/(TOP-BASE));sky.material.uniforms.alt.value=a;scene.fog.color.setRGB(.66-.3*a,.76-.3*a,.87-.25*a);}mountains.position.y=camY*.92;ground.visible=camY<120;sun.position.set(camera.position.x-12,camY+9,4);sun.target.position.set(0,camY,0);
  updateChunks(Math.min(camY,S.mode==='fall'?ps.hip.y:camY));
  // hud
