@@ -114,6 +114,7 @@ function curLP(){const o={};for(const L of LIMBS)o[L]=(S.limbs[L].to||S.limbs[L]
 function canMove(L,h){if(h.type==='crack'&&L[1]==='F'&&false)return false;for(const K of LIMBS)if(K!==L&&S.limbs[K].hold===h&&h.type!=='ledge'&&h.type!=='jug')return false;const lp=curLP();lp[L]=h.pos.clone();return valid(lp);}
 function msg(t){(window.CLIMB_UI&&window.CLIMB_UI.toast)?window.CLIMB_UI.toast(t):(hudMsg.textContent=t,hudMsg.style.opacity=1,S.msgT=1.4);}
 function moveLimb(L,h,auto){const l=S.limbs[L];if(S.mode!=='climb')return false;if(!canMove(L,h)){msg('Out of reach');return false;}
+ S.stamina=Math.max(0,S.stamina-(L[1]==='H'?.0055:.0025)*(getHeight()>=8000&&!S.eq.oxygen?1.6:1));S.idle=0;
  l.from=l.pos.clone();l.to=h.pos.clone();l.t=0;l.hold=null;l.next=h;return true;}
 function attachNear(p){const pick=(tx,ty,excl)=>{let b=null,bd=1e9;for(const h of holds){if(excl.includes(h))continue;const d=(h.pos.x-tx)**2+(h.pos.y-ty)**2+(1-Math.min(1,h.q))*.25;if(d<bd){bd=d;b=h;}}return b;};
  const used=[];const set=(L,tx,ty)=>{const h=pick(tx,ty,used);used.push(h);S.limbs[L]={hold:h,pos:h.pos.clone()};};
@@ -232,7 +233,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-last
   const gripF=.4+.6*S.grip,support=hq*gripF+fq*.7;const onLedge=fc===2&&S.limbs.LF.hold.type==='ledge'&&S.limbs.RF.hold.type==='ledge';
   const altF=getHeight()>=8000?(S.eq.oxygen?.6:1.4):1,coldF=1+Math.min(1,(getHeight()-5300)/3549)*(.3+(S.eq.downSuit?0:.5)+(S.eq.gloves?0:.5));const effort=Math.max(0,Math.min(1,(2.6-support)/2.2));S.effort=effort;
   if(onLedge){S.stamina=Math.min(1,S.stamina+dt*.15);S.grip=Math.min(1,S.grip+dt*.05);}
-  else{S.stamina+= support>2.4?dt*.02:-dt*altF*(.004+.05*effort*effort+(fc===0?.05:0));S.grip-=dt*coldF*(.004+.012*effort);}
+  else{S.idle=(S.idle||0)+dt;S.stamina+= support>2.4?(S.idle>2?dt*.02:0):-dt*altF*(.004+.05*effort*effort+(fc===0?.05:0));S.grip-=dt*coldF*(.004+.012*effort);}
   S.stamina=Math.max(0,Math.min(1,S.stamina));S.grip=Math.max(0,Math.min(1,S.grip));
   S.grace=(S.grace||0)-dt;if(S.grace<=0){if(hc===0&&!S.limbs.LH.to&&!S.limbs.RH.to)startFall('Lost hold!');else if(hc===0&&fc<2)startFall('Peeled off!');
    else if(S.stamina<=0)startFall('Pumped out!');else if(S.grip<.08&&hq<2)startFall('Hands slipped!');}
